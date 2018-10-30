@@ -7,8 +7,10 @@
 import os
 from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
-from wtforms import StringField # Note that you may need to import more here! Check out examples that do what you want to figure out what.
-from wtforms.validators import Required # Here, too
+import requests
+import json
+from wtforms import StringField, SubmitField, ValidationError# Note that you may need to import more here! Check out examples that do what you want to figure out what.
+from wtforms.validators import Required, Length# Here, too
 from flask_sqlalchemy import SQLAlchemy
 
 ## App setup code
@@ -75,10 +77,11 @@ def all_names():
 
 
 
-
-
-
 ## Code to run the application...
 
 # Put the code to do so here!
 # NOTE: Make sure you include the code you need to initialize the database structure when you run the application!
+
+if __name__ == '__main__':
+    db.create_all() # Will create any defined models when you run the application
+    app.run(use_reloader=True,debug=True) # The usual
