@@ -1,3 +1,7 @@
+
+# Sam Lu SI 364
+# I referenced code from HW 3 for this
+
 ###############################
 ####### SETUP (OVERALL) #######
 ###############################
@@ -71,13 +75,22 @@ class Placeform(FlaskForm):
         if len(splitcheck) >  5: #your name of the location cannot exceed 5 words! ! !
             raise ValidationError("The name of your location cannot exceed 5 words.")
 
+## Error handling routes - THIS IS COPIED FROM HOMEWORK 3
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
 
 #######################
 ###### VIEW FXNS ######
 #######################
 
 @app.route('/', methods=['GET', 'POST'])
-def home():
+def index():
     form = PlaceForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
     if form.validate_on_submit():
         name = form.name.data
