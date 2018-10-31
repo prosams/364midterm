@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content1 %}
+
+<h1>All the station searches you made (only your input)</h1>
+
+{% for n in stations %}
+    <p>{{ n }}</p>
+{% endfor %}
+
+{% endblock %}

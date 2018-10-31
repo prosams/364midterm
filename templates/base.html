@@ -1,9 +1,15 @@
 
 
 {% block content1 %}
+<br>
+<h1>Gas Station Locator</h1>
 
-<form action="{{ url_for('home') }}" method="POST">
-    {{ form.name.label() }}{{ form.name() }}<br>
+
+<form action="{{ url_for('index') }}" method="POST">
+    {{ form.location.label() }}{{ form.location() }}<br>
+    <br>
+    {{ form.type.label() }}{{ form.type() }}<br>
+    <br>
     {{ form.submit() }}
     {{ form.hidden_tag() }}
 </form>
@@ -15,7 +21,7 @@
 <h3>Navigation</h3>
 <ul>
     <li><a href="{{ url_for('index')}}">Go to main location input form.</a></li>
-    <li><a href="{{ url_for('see_all_gas')}}">See all gas stations.</a></li>
-    <!-- <li><a href="{{ url_for('see_all_hospital')}}">See all hospitals.</a></li>-->
-    <li><a href="{{ url_for('see_all_loc')}}">See all locations (including searches) so far.</a></li>
+    <li><a href="{{ url_for('all_searched_gas')}}">See all searched gas stations.</a></li>
+    <li><a href="{{ url_for('all_searched_loc')}}">See all locations (including searches) so far.</a></li>
+    <li><a href="{{ url_for('results')}}">See all search results.</a></li>
 </ul>

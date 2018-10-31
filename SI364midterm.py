@@ -23,20 +23,17 @@ app.debug = True
 
 ## All app.config values
 app.config['SECRET_KEY'] = 'hard to guess string from si364'
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/SI364midterm"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/midterm"
 ## Provided:
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-
 ## Statements for db setup (and manager setup if using Manager)
 db = SQLAlchemy(app)
-
 
 ######################################
 ######## HELPER FXNS (If any) ########
 ######################################
-
 
 ##################
 ##### MODELS #####
@@ -44,7 +41,7 @@ db = SQLAlchemy(app)
 
 class Locations(db.Model):
     __tablename__ = "locations"
-    locationid = db.Column(db.Integer,primary_key=True)
+    locationid = db.Column(db.Integer, primary_key=True)
     city = db.Column(db.String(64))
     state = db.Column(db.String(64))
 
@@ -53,6 +50,7 @@ class Locations(db.Model):
 
 class Gassy(db.Model):
     __tablename__ = "gasstations"
+    gasid = db.Column(db.Integer, primary_key=True)
     gasname = db.Column(db.String(64)) #name of the gas station
     road = db.Column(db.String(64))
     locationid = (db.Integer, db.ForeignKey('locations.locationid'))
@@ -64,9 +62,9 @@ class Gassy(db.Model):
 ###### FORMS ######
 ###################
 
-class Placeform(FlaskForm):
-    name = StringField("Please enter the place you want to search for.", validators=[Required(), Length(min=0,  max=64)])
-    type = StringField("Please enter the company of gas station you want to look up (ie. Shell, Mobil, etc)", validators=[Required(), Length(min=0,  max=64)])
+class PlaceForm(FlaskForm):
+    location = StringField("Please enter the place you want to search for — ideally, city. ", validators=[Required(), Length(min=0,  max=64)])
+    type = StringField("Please enter the brand you want to look up followed by 'gas station' (ie. Shell gas station or just 'gas station' if brand doesn't matter)", validators=[Required(), Length(min=0,  max=64)])
     submit = SubmitField("Submit")
 
     def validate_name(form, field): # TODO 364: Set up custom validation for this form
@@ -100,22 +98,19 @@ def index():
         return redirect(url_for('all_names'))
     return render_template('base.html',form=form)
 
-@app.route('/index')
-def all_names():
-    names = Name.query.all()
-    return render_template('name_example.html',names=names)
+@app.route('/all_searched_gas')
+def all_searched_gas():
+    stats = Gassy.query.all()
+    return render_template('stations.html', stations=stats)
 
-@app.route('/see_all_gas')
-def all_names():
-    names = Name.query.all()
-    return render_template('name_example.html',names=names)
+@app.route('/all_searched_loc')
+def all_searched_loc():
+    locs = Locations.query.all()
+    return render_template('searchedlocations.html', locations=locs)
 
-@app.route('/see_all_loc')
-def all_names():
-    names = Name.query.all()
-    return render_template('name_example.html',names=names)
-
-## Code to run the application...
+@app.route('/results')
+def results(): # all the results (after calls made to google place api)
+    return render_template('searchedlocations.html', locations=locs)
 
 # Put the code to do so here!
 # NOTE: Make sure you include the code you need to initialize the database structure when you run the application!
