@@ -53,10 +53,12 @@ class Gassy(db.Model):
     gasid = db.Column(db.Integer, primary_key=True)
     gasname = db.Column(db.String(64)) #name of the gas station
     road = db.Column(db.String(64))
+    lat = db.Column(db.Integer)
+    long = db.Column(db.Integer)
     locationid = (db.Integer, db.ForeignKey('locations.locationid'))
 
     def __repr__(self):
-        return "{}, {} (ID: {})".format(self.gasname, self.road, self.locationid)
+        return "{} at {} (Gas station ID: {})".format(self.gasname, self.road, self.gasid)
 
 ###################
 ###### FORMS ######
@@ -73,6 +75,11 @@ class PlaceForm(FlaskForm):
         if len(splitcheck) >  5: #your name of the location cannot exceed 5 words! ! !
             raise ValidationError("The name of your location cannot exceed 5 words.")
 
+    def validate_type(form, field): # TODO 364: Set up custom validation for this form
+        displaydata = field.data
+        if "gas station" not in displaydata:
+            raise ValidationError("You must have 'gas station' within your second input!")
+
 ## Error handling routes - THIS IS COPIED FROM HOMEWORK 3
 @app.errorhandler(404)
 def page_not_found(e):
@@ -82,37 +89,46 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
-
 #######################
 ###### VIEW FXNS ######
 #######################
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
     form = PlaceForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
+
+    return render_template('base.html',form=form)
+
+@app.route('/results', methods=['GET', 'POST'])
+def results(): # all the results (after calls made to google place api)
+    form = PlaceForm(request.form)
+    url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
+    searchstring = " "
+
     if form.validate_on_submit():
-        name = form.name.data
+        location = form.location.data
+        specifics = form.type.data
         newname = Name(name)
         db.session.add(newname)
         db.session.commit()
         return redirect(url_for('all_names'))
-    return render_template('base.html',form=form)
+    return render_template('results.html', locations=locs)
 
 @app.route('/all_searched_gas')
-def all_searched_gas():
+def all_gas():
     stats = Gassy.query.all()
     return render_template('stations.html', stations=stats)
 
 @app.route('/all_searched_loc')
-def all_searched_loc():
+def all_loc():
     locs = Locations.query.all()
     return render_template('searchedlocations.html', locations=locs)
 
-@app.route('/results')
-def results(): # all the results (after calls made to google place api)
-    return render_template('searchedlocations.html', locations=locs)
+# @app.route('/searches') # this app route returns a list of everything that the user has inputted into the form basically
+# def all_loc():
+#     locs = Locations.query.all()
+#     return render_template('searchedlocations.html', locations=locs)
 
-# Put the code to do so here!
 # NOTE: Make sure you include the code you need to initialize the database structure when you run the application!
 
 if __name__ == '__main__':

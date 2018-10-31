@@ -3,3 +3,17 @@
 {% block content %}
 <p>this should be where you have all of the results</p>
 {% endblock %}
+
+{% block content %}
+  <h1>Simple WTF-Form</h1>
+  <form method="POST" action="http://localhost:5000/results">
+      {{ form.hidden_tag() }}
+      {% for message in get_flashed_messages() %}
+      {{ message }}
+      {% endfor %}
+      <p>{{ form.artist.label }}{{ form.artist() }}</p>
+      <p>{{ form.number.label }}{{ form.number() }}</p>
+      <p>{{ form.email.label }}{{ form.email() }}</p>
+      {{ form.submit() }}
+  </form>
+{% endblock %}
