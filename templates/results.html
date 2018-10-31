@@ -1,19 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<p>this should be where you have all of the results</p>
-{% endblock %}
-
-{% block content %}
-  <h1>Simple WTF-Form</h1>
-  <form method="POST" action="http://localhost:5000/results">
-      {{ form.hidden_tag() }}
-      {% for message in get_flashed_messages() %}
-      {{ message }}
-      {% endfor %}
-      <p>{{ form.artist.label }}{{ form.artist() }}</p>
-      <p>{{ form.number.label }}{{ form.number() }}</p>
-      <p>{{ form.email.label }}{{ form.email() }}</p>
-      {{ form.submit() }}
-  </form>
+	<h1>The results of your search</h1>
+		{% for item in finaltuplist %}
+		<i>{{ item[0] }}</i> at <strong>{{ item[1] }}</strong> in {{ item[2] }}, {{ item[3] }}<br>
+		<br>
+		{% endfor %}
+</form>
 {% endblock %}

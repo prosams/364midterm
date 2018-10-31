@@ -1,19 +1,8 @@
 
 
-{% block content1 %}
-<br>
-<h1>Gas Station Locator</h1>
+{% block content %}
 
-
-<form action="{{ url_for('results') }}" method="POST">
-    {{ form.location.label() }}{{ form.location() }}<br>
-    <br>
-    {{ form.type.label() }}{{ form.type() }}<br>
-    <br>
-    {{ form.submit() }}
-    {{ form.hidden_tag() }}
-</form>
-
+this is the base html file of the gas station locator web app
 
 {% endblock %}
 
@@ -23,6 +12,5 @@
     <li><a href="{{ url_for('index')}}">Go to main location input form.</a></li>
     <li><a href="{{ url_for('all_gas')}}">See all gas stations.</a></li>
     <li><a href="{{ url_for('all_loc')}}">See all locations so far.</a></li>
-    <!--<li><a href="{{ url_for('searches')}}">See all locations so far.</a></li>-->
     <li><a href="{{ url_for('results')}}">See all search results.</a></li>
 </ul>

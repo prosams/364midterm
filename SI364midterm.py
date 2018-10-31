@@ -1,13 +1,14 @@
 
 # Sam Lu SI 364
 # I referenced code from HW 3 for this
+# also code from the WTForms example with itunes
+# https://www.pythonsheets.com/notes/python-sqlalchemy.html
 
 ###############################
 ####### SETUP (OVERALL) #######
 ###############################
 
 ## Import statements
-# Import statements
 import os
 from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
@@ -97,29 +98,84 @@ def internal_server_error(e):
 def index():
     form = PlaceForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
 
-    return render_template('base.html',form=form)
+    # if form.validate_on_submit():
+    #     url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
+    #     key = "AIzaSyCWhfoQXqSoKBkK0kjnrE3N0tSwVe10pWw"
+    #     location = form.location.data
+    #     specifics = form.type.data
+    #     searchstring = specifics + " " + location #this combines the two inputs into a searchable string that will be used in the api call
+    #     request = requests.get(url, params = {"query":searchstring, "key":key})
+    #     result = request.json()
+    #
+    #     for x in result["results"]:
+    #         locationdict = x["geometry"]["location"]
+    #         locstring = str(locationdict["lat"]) + "," + str(locationdict["lng"])
+    #         lat = locationdict["lat"]           #lat of gas station
+    #         long = locationdict["lng"]          #longitude of gas station
+    #         name = x["name"]                    # name of the gas station
+    #         address = x["formatted_address"]
+    #         splitad = address.split(",")        # this is just for getting individual bits
+    #         road = splitad[0]                   # road address of gas station
+    #         city = splitad[1]                   #city of gas station - to go into the Locations table
+    #         state = splitad[2].split()[0]       #state of gas station - to go in locations table
+    #
+    #         newloc = Locations(city = city, state = state)
+    #         newgas = Gassy(gasname = name, road = road, lat = lat, long = long)
+    #
+    #         db.session.add(newloc)
+    #         db.session.add(newgas)
+    #         db.session.commit()
+
+        # return redirect(url_for(''))
+    return render_template('index.html',form=form)
 
 @app.route('/results', methods=['GET', 'POST'])
-def results(): # all the results (after calls made to google place api)
+def results(): # all the results (after calls made to google place api, this should be what shows up)
     form = PlaceForm(request.form)
-    url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
-    searchstring = " "
 
-    if form.validate_on_submit():
+    if request.method == 'POST' and form.validate_on_submit():
+        biglist = [] # this is the final list that will be iterated through to return the results from the search
+        url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
+        key = "AIzaSyCWhfoQXqSoKBkK0kjnrE3N0tSwVe10pWw"
+        params = {}
+
         location = form.location.data
         specifics = form.type.data
-        newname = Name(name)
-        db.session.add(newname)
-        db.session.commit()
-        return redirect(url_for('all_names'))
-    return render_template('results.html', locations=locs)
+        searchstring = specifics + " " + location
+        params["query"] = searchstring
+        params["key"] = key
+        response = requests.get(url, params)
+        result = response.json()
 
-@app.route('/all_searched_gas')
+        for x in result["results"]:
+            locationdict = x["geometry"]["location"]
+            locstring = str(locationdict["lat"]) + "," + str(locationdict["lng"])
+            lat = locationdict["lat"]           #lat of gas station
+            long = locationdict["lng"]          #longitude of gas station
+            name = x["name"]                    # name of the gas station
+            address = x["formatted_address"]
+            splitad = address.split(",")        # this is just for getting individual bits
+            road = splitad[0]                   # road address of gas station
+            city = splitad[1]                   #city of gas station - to go into the Locations table
+            state = splitad[2].split()[0]       #state of gas station - to go in locations table
+
+            newloc = Locations(city = city, state = state)
+            newgas = Gassy(gasname = name, road = road, lat = lat, long = long)
+            db.session.add(newloc)
+            db.session.add(newgas)
+            db.session.commit()
+            biglist.append((name, road, city, state)) # appends a tuple with information about each of the individual gas stations to the final list of tuples
+
+        return render_template('results.html', finaltuplist = biglist)
+    flash('All fields are required!')
+    return redirect(url_for('index'))
+
+@app.route('/all_gas')
 def all_gas():
     stats = Gassy.query.all()
     return render_template('stations.html', stations=stats)
 
-@app.route('/all_searched_loc')
+@app.route('/all_loc')
 def all_loc():
     locs = Locations.query.all()
     return render_template('searchedlocations.html', locations=locs)
@@ -128,8 +184,6 @@ def all_loc():
 # def all_loc():
 #     locs = Locations.query.all()
 #     return render_template('searchedlocations.html', locations=locs)
-
-# NOTE: Make sure you include the code you need to initialize the database structure when you run the application!
 
 if __name__ == '__main__':
     db.create_all() # Will create any defined models when you run the application
