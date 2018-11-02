@@ -36,6 +36,16 @@ db = SQLAlchemy(app)
 ######## HELPER FXNS (If any) ########
 ######################################
 
+def get_or_create_location(db_session, city, state):
+    location = db.session.query(Locations).filter_by(city=city).first()
+    if location:
+        return location
+    else:
+        newloc = Locations(city = city, state = state)
+        db.session.add(newloc)
+        db.session.commit()
+        return newloc
+
 ##################
 ##### MODELS #####
 ##################
@@ -54,8 +64,8 @@ class Gassy(db.Model):
     gasid = db.Column(db.Integer, primary_key=True)
     gasname = db.Column(db.String(64)) #name of the gas station
     road = db.Column(db.String(64))
-    lat = db.Column(db.Integer)
-    long = db.Column(db.Integer)
+    lat = db.Column(db.Float)
+    long = db.Column(db.Float)
     locationid = (db.Integer, db.ForeignKey('locations.locationid'))
 
     def __repr__(self):
@@ -96,37 +106,7 @@ def internal_server_error(e):
 
 @app.route('/')
 def index():
-    form = PlaceForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
-
-    # if form.validate_on_submit():
-    #     url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
-    #     key = "AIzaSyCWhfoQXqSoKBkK0kjnrE3N0tSwVe10pWw"
-    #     location = form.location.data
-    #     specifics = form.type.data
-    #     searchstring = specifics + " " + location #this combines the two inputs into a searchable string that will be used in the api call
-    #     request = requests.get(url, params = {"query":searchstring, "key":key})
-    #     result = request.json()
-    #
-    #     for x in result["results"]:
-    #         locationdict = x["geometry"]["location"]
-    #         locstring = str(locationdict["lat"]) + "," + str(locationdict["lng"])
-    #         lat = locationdict["lat"]           #lat of gas station
-    #         long = locationdict["lng"]          #longitude of gas station
-    #         name = x["name"]                    # name of the gas station
-    #         address = x["formatted_address"]
-    #         splitad = address.split(",")        # this is just for getting individual bits
-    #         road = splitad[0]                   # road address of gas station
-    #         city = splitad[1]                   #city of gas station - to go into the Locations table
-    #         state = splitad[2].split()[0]       #state of gas station - to go in locations table
-    #
-    #         newloc = Locations(city = city, state = state)
-    #         newgas = Gassy(gasname = name, road = road, lat = lat, long = long)
-    #
-    #         db.session.add(newloc)
-    #         db.session.add(newgas)
-    #         db.session.commit()
-
-        # return redirect(url_for(''))
+    form = PlaceForm()
     return render_template('index.html',form=form)
 
 @app.route('/results', methods=['GET', 'POST'])
@@ -136,7 +116,7 @@ def results(): # all the results (after calls made to google place api, this sho
     if request.method == 'POST' and form.validate_on_submit():
         biglist = [] # this is the final list that will be iterated through to return the results from the search
         url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
-        key = "AIzaSyCWhfoQXqSoKBkK0kjnrE3N0tSwVe10pWw"
+        key = ""
         params = {}
 
         location = form.location.data
@@ -159,11 +139,15 @@ def results(): # all the results (after calls made to google place api, this sho
             city = splitad[1]                   #city of gas station - to go into the Locations table
             state = splitad[2].split()[0]       #state of gas station - to go in locations table
 
-            newloc = Locations(city = city, state = state)
+
             newgas = Gassy(gasname = name, road = road, lat = lat, long = long)
-            db.session.add(newloc)
+
             db.session.add(newgas)
             db.session.commit()
+
+            newloc = Locations(city = city, state = state)
+            db.session.add(newloc)
+
             biglist.append((name, road, city, state)) # appends a tuple with information about each of the individual gas stations to the final list of tuples
 
         return render_template('results.html', finaltuplist = biglist)
@@ -179,11 +163,6 @@ def all_gas():
 def all_loc():
     locs = Locations.query.all()
     return render_template('searchedlocations.html', locations=locs)
-
-# @app.route('/searches') # this app route returns a list of everything that the user has inputted into the form basically
-# def all_loc():
-#     locs = Locations.query.all()
-#     return render_template('searchedlocations.html', locations=locs)
 
 if __name__ == '__main__':
     db.create_all() # Will create any defined models when you run the application
