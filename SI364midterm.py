@@ -50,26 +50,28 @@ def get_or_create_location(db_session, city, state):
 ##### MODELS #####
 ##################
 
-class Locations(db.Model):
-    __tablename__ = "locations"
-    locationid = db.Column(db.Integer, primary_key=True)
-    city = db.Column(db.String(64))
-    state = db.Column(db.String(64))
-
-    def __repr__(self):
-        return "{}, {} (ID: {})".format(self.city, self.state, self.locationid)
-
-class Gassy(db.Model):
+class Gassy(db.Model): #each individual gas station has one location
     __tablename__ = "gasstations"
     gasid = db.Column(db.Integer, primary_key=True)
     gasname = db.Column(db.String(64)) #name of the gas station
     road = db.Column(db.String(64))
     lat = db.Column(db.Float)
     long = db.Column(db.Float)
-    locationid = (db.Integer, db.ForeignKey('locations.locationid'))
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.locationid'))
 
     def __repr__(self):
         return "{} at {} (Gas station ID: {})".format(self.gasname, self.road, self.gasid)
+
+class Locations(db.Model): # one location can have many gas stations
+    __tablename__ = "locations"
+    locationid = db.Column(db.Integer, primary_key=True) #
+    city = db.Column(db.String(64))
+    state = db.Column(db.String(64))
+    gasses = db.relationship("Gassy", backref='Locations')
+
+    def __repr__(self):
+        return "{}, {} (ID: {})".format(self.city, self.state, self.locationid)
+
 
 ###################
 ###### FORMS ######
@@ -104,7 +106,7 @@ def internal_server_error(e):
 ###### VIEW FXNS ######
 #######################
 
-@app.route('/')
+@app.route('/') #beware of form.args
 def index():
     form = PlaceForm()
     return render_template('index.html',form=form)
@@ -119,7 +121,7 @@ def results(): # all the results (after calls made to google place api, this sho
         key = ""
         params = {}
 
-        location = form.location.data
+        location = form.location.data #change this if it changes to get
         specifics = form.type.data
         searchstring = specifics + " " + location
         params["query"] = searchstring
@@ -140,13 +142,12 @@ def results(): # all the results (after calls made to google place api, this sho
             state = splitad[2].split()[0]       #state of gas station - to go in locations table
 
 
-            newgas = Gassy(gasname = name, road = road, lat = lat, long = long)
-
-            db.session.add(newgas)
-            db.session.commit()
-
             newloc = Locations(city = city, state = state)
             db.session.add(newloc)
+            db.session.commit()
+
+            newgas = Gassy(gasname = name, road = road, lat = lat, long = long, location_id = newloc.locationid)
+            db.session.add(newgas)
 
             biglist.append((name, road, city, state)) # appends a tuple with information about each of the individual gas stations to the final list of tuples
 
