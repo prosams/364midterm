@@ -2,6 +2,7 @@
 # Sam Lu SI 364
 # I referenced code from HW 3 for this
 # also code from the WTForms example with itunes
+# also code from the get - or - create example
 # https://www.pythonsheets.com/notes/python-sqlalchemy.html
 
 ###############################
@@ -47,6 +48,16 @@ def get_or_create_location(city, state):
         db.session.commit()
         return newloc
 
+def get_or_create_gas(gasname, road, lat, long, location_id):
+    gas = db.session.query(Gassy).filter_by(gasname = gasname, road = road) #if they have the same name and road they are presumably the same gas station
+    if gas:
+        return gas
+    else:
+        newgas = Gassy(gasname = gasname, road = road, lat = lat, long = long, location_id = location_id)
+        db.session.add(newgas)
+        db.session.commit()
+        return newgas
+
 ##################
 ##### MODELS #####
 ##################
@@ -61,7 +72,7 @@ class Gassy(db.Model): #each individual gas station has one location
     location_id = db.Column(db.Integer, db.ForeignKey('locations.locationid'))
 
     def __repr__(self):
-        return "{} at {} (Gas station ID: {})".format(self.gasname, self.road, self.gasid)
+        return "#{}. {} at {}.".format(self.gasid, self.road, self.gasname)
 
 class Locations(db.Model): # one location can have many gas stations
     __tablename__ = "locations"
@@ -124,6 +135,8 @@ def results(): # all the results (after calls made to google place api, this sho
 
         location = form.location.data #change this if it changes to get
         specifics = form.type.data
+                # location = request.args.get("location") #change this if it changes to get
+                # specifics = request.args.get("type")
         searchstring = specifics + " " + location
         params["query"] = searchstring
         params["key"] = key
@@ -143,14 +156,13 @@ def results(): # all the results (after calls made to google place api, this sho
             state = splitad[2].split()[0]       #state of gas station - to go in locations table
 
             newloc = get_or_create_location(city, state) #need to check this every time because even though the original query is the same city, not all of the results will be from the same city (sometimes they just give all neighboring)
-
-            newgas = Gassy(gasname = name, road = road, lat = lat, long = long, location_id = newloc.locationid)
-            db.session.add(newgas)
+            newgas = get_or_create_gas(gasname = name, road = road, lat = lat, long = long, location_id = newloc.locationid)
 
             biglist.append((name, road, city, state)) # appends a tuple with information about each of the individual gas stations to the final list of tuples
-
         return render_template('results.html', finaltuplist = biglist)
-    flash('All fields are required!')
+    errors = [v for v in form.errors.values()]
+    if len(errors) > 0:
+        flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
     return redirect(url_for('index'))
 
 @app.route('/all_gas')
