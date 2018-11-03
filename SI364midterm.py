@@ -36,12 +36,13 @@ db = SQLAlchemy(app)
 ######## HELPER FXNS (If any) ########
 ######################################
 
-def get_or_create_location(db_session, city, state):
+# takes in city or state and then checks if there's something in the Locations table with those parts
+def get_or_create_location(city, state):
     location = db.session.query(Locations).filter_by(city=city).first()
-    if location:
+    if location: # if the thing already exists, does not commit
         return location
     else:
-        newloc = Locations(city = city, state = state)
+        newloc = Locations(city = city, state = state) #if the thing does not already exist, adds to database and then returns it
         db.session.add(newloc)
         db.session.commit()
         return newloc
@@ -141,10 +142,7 @@ def results(): # all the results (after calls made to google place api, this sho
             city = splitad[1]                   #city of gas station - to go into the Locations table
             state = splitad[2].split()[0]       #state of gas station - to go in locations table
 
-
-            newloc = Locations(city = city, state = state)
-            db.session.add(newloc)
-            db.session.commit()
+            newloc = get_or_create_location(city, state) #need to check this every time because even though the original query is the same city, not all of the results will be from the same city (sometimes they just give all neighboring)
 
             newgas = Gassy(gasname = name, road = road, lat = lat, long = long, location_id = newloc.locationid)
             db.session.add(newgas)
