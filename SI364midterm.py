@@ -13,7 +13,7 @@
 import os
 from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, ValidationError# Note that you may need to import more here! Check out examples that do what you want to figure out what.
+from wtforms import StringField, SubmitField, IntegerField, RadioField, ValidationError# Note that you may need to import more here! Check out examples that do what you want to figure out what.
 from wtforms.validators import Required, Length# Here, too
 from flask_sqlalchemy import SQLAlchemy
 import requests
@@ -25,7 +25,7 @@ app.debug = True
 
 ## All app.config values
 app.config['SECRET_KEY'] = 'hard to guess string from si364'
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/midterm"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/364midterm"
 ## Provided:
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -48,15 +48,15 @@ def get_or_create_location(city, state):
         db.session.commit()
         return newloc
 
-def get_or_create_gas(gasname, road, lat, long, location_id):
-    gas = db.session.query(Gassy).filter_by(gasname = gasname, road = road) #if they have the same name and road they are presumably the same gas station
-    if gas:
-        return gas
-    else:
-        newgas = Gassy(gasname = gasname, road = road, lat = lat, long = long, location_id = location_id)
-        db.session.add(newgas)
-        db.session.commit()
-        return newgas
+# def get_or_create_gas(gasname, road, lat, long, location_id):
+#     gas = db.session.query(Gassy).filter_by(gasname = gasname, road = road) #if they have the same name and road they are presumably the same gas station
+#     if gas:
+#         return gas
+#     else:
+#         newgas = Gassy(gasname = gasname, road = road, lat = lat, long = long, location_id = location_id)
+#         db.session.add(newgas)
+#         db.session.commit()
+#         return newgas
 
 ##################
 ##### MODELS #####
@@ -72,7 +72,7 @@ class Gassy(db.Model): #each individual gas station has one location
     location_id = db.Column(db.Integer, db.ForeignKey('locations.locationid'))
 
     def __repr__(self):
-        return "#{}. {} at {}.".format(self.gasid, self.road, self.gasname)
+        return "#{}. {} at {}.".format(self.gasid, self.gasname, self.road)
 
 class Locations(db.Model): # one location can have many gas stations
     __tablename__ = "locations"
@@ -84,6 +84,15 @@ class Locations(db.Model): # one location can have many gas stations
     def __repr__(self):
         return "{}, {} (ID: {})".format(self.city, self.state, self.locationid)
 
+class UserOpinion(db.Model): #a table that is filled with user opinions on gas stations etc
+    __tablename__ = "useropinion"
+    opinionid = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    rating = db.Column(db.String(64))
+    comments = db.Column(db.String(64))
+
+    def __repr__(self):
+        return "#{}. [{}] has a rating of {} and your comments were: {}".format(self.opinionid, self.name, self.rating, self.comments)
 
 ###################
 ###### FORMS ######
@@ -105,6 +114,12 @@ class PlaceForm(FlaskForm):
         if "gas station" not in displaydata:
             raise ValidationError("You must have 'gas station' within your second input!")
 
+class OpinionForm(FlaskForm):
+    name = StringField("Please enter the name of the station you want to leave an opinion about: ", validators=[Required(), Length(min=0,  max=64)])
+    rating = StringField('Please enter your rating out of 5 (1 low, 5 high)', validators=[Required(),  Length(min=0,  max=2)])
+    comments = StringField("Please enter any comments you have about the station", validators=[Required(), Length(min=0,  max=128)])
+    submit = SubmitField("Submit")
+
 ## Error handling routes - THIS IS COPIED FROM HOMEWORK 3
 @app.errorhandler(404)
 def page_not_found(e):
@@ -118,7 +133,7 @@ def internal_server_error(e):
 ###### VIEW FXNS ######
 #######################
 
-@app.route('/') #beware of form.args
+@app.route('/')
 def index():
     form = PlaceForm()
     return render_template('index.html',form=form)
@@ -135,8 +150,6 @@ def results(): # all the results (after calls made to google place api, this sho
 
         location = form.location.data #change this if it changes to get
         specifics = form.type.data
-                # location = request.args.get("location") #change this if it changes to get
-                # specifics = request.args.get("type")
         searchstring = specifics + " " + location
         params["query"] = searchstring
         params["key"] = key
@@ -156,7 +169,10 @@ def results(): # all the results (after calls made to google place api, this sho
             state = splitad[2].split()[0]       #state of gas station - to go in locations table
 
             newloc = get_or_create_location(city, state) #need to check this every time because even though the original query is the same city, not all of the results will be from the same city (sometimes they just give all neighboring)
-            newgas = get_or_create_gas(gasname = name, road = road, lat = lat, long = long, location_id = newloc.locationid)
+            # newgas = get_or_create_gas(gasname = name, road = road, lat = lat, long = long, location_id = newloc.locationid)
+            newgas = Gassy(gasname = name, road = road, lat = lat, long = long, location_id = newloc.locationid)
+            db.session.add(newgas)
+            db.session.commit()
 
             biglist.append((name, road, city, state)) # appends a tuple with information about each of the individual gas stations to the final list of tuples
         return render_template('results.html', finaltuplist = biglist)
@@ -174,6 +190,33 @@ def all_gas():
 def all_loc():
     locs = Locations.query.all()
     return render_template('searchedlocations.html', locations=locs)
+
+@app.route('/opinion',  methods=['GET'])
+def opinion():
+    form = OpinionForm()
+    return render_template('opinion.html', form=form)
+
+@app.route('/opinonresults',  methods=['GET', 'POST'])
+def opinionresults():
+    form = OpinionForm(request.form)
+    name = request.args.get('name')
+    rating = request.args.get('rating')
+    comments = request.args.get("comments")
+
+    new = UserOpinion(name=name, rating=rating, comments=comments)
+    db.session.add(new)
+    db.session.commit()
+
+    errors = [v for v in form.errors.values()]
+    if len(errors) > 0:
+        flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
+
+    return render_template("opinionresults.html", name = name, rating = rating, comments = comments)
+
+@app.route('/all_ops')
+def allops():
+    all = UserOpinion.query.all()
+    return render_template('allops.html', all=all)
 
 if __name__ == '__main__':
     db.create_all() # Will create any defined models when you run the application
