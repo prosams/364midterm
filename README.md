@@ -1,7 +1,7 @@
 # 364midterm
 si 364 midterm project — Gas Station Locator
 
-###Important: This app needs a Google Places API key in order to run properly! If there is no API key, it will not work.###
+####Important: This app needs a Google Places API key in order to run properly! If there is no API key, it will not work.####
 
 This app takes in a location and brand of gas and then looks up gas stations in that locale using the Google Places API. You have the option of just searching for gas stations in general by simply typing "gas station" and not specifying the company. You also have the option of leaving comments about any of the individual gas stations via a form that allows you to input the name of a gas station, it's rating out of 5 stars, and then any comments you might have.
 
@@ -16,11 +16,11 @@ There are three tables in the database: a table for locations (broader city), a 
 - /opinionresults this page shows you the opinion that you have just inputted.
 - /all_ops this page shows you all of the user opinions currently stored in the database.
 
-##routes and templates
-/ — index.html
-/results — results.html
-/all_gas — stations.html
-/all_loc — searchedlocations.html
-/opinion — opinion.html
-/opinionresults — opinionresults.html
-/all_ops — allops.html
+####routes and templates####
+- / — index.html
+- /results — results.html
+- /all_gas — stations.html
+- /all_loc — searchedlocations.html
+- /opinion — opinion.html
+- /opinionresults — opinionresults.html
+- /all_ops — allops.html
