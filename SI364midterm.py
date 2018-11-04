@@ -48,16 +48,6 @@ def get_or_create_location(city, state):
         db.session.commit()
         return newloc
 
-# def get_or_create_gas(gasname, road, lat, long, location_id):
-#     gas = db.session.query(Gassy).filter_by(gasname = gasname, road = road) #if they have the same name and road they are presumably the same gas station
-#     if gas:
-#         return gas
-#     else:
-#         newgas = Gassy(gasname = gasname, road = road, lat = lat, long = long, location_id = location_id)
-#         db.session.add(newgas)
-#         db.session.commit()
-#         return newgas
-
 ##################
 ##### MODELS #####
 ##################
