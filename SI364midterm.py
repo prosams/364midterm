@@ -196,7 +196,7 @@ def opinion():
     form = OpinionForm()
     return render_template('opinion.html', form=form)
 
-@app.route('/opinonresults',  methods=['GET', 'POST'])
+@app.route('/opinionresults',  methods=['GET', 'POST'])
 def opinionresults():
     form = OpinionForm(request.form)
     name = request.args.get('name')
